@@ -305,9 +305,13 @@ main genre, take its `SubGenreNames` from the master genre list.
 
 ## Master genre list
 
-This is the one piece that **must be coordinated**, not just copied.
+This is the **allowed vocabulary** the engine must pick from. It must be identical on both sides: when
+Shuffull consumes funnel-supplied `GeneratedTags`, it maps the genre strings onto its own `Genres` table.
+If the funnel inferred against a different list, the strings won't match and the mapping degrades.
 
-Type (`Shuffull.Metadata.Models`):
+**This is now solved — the canonical list ships *inside* `Shuffull.Metadata`** as an embedded resource, so
+both sides reference the same compiled artifact and it cannot drift. There is no file to copy or keep in
+sync. Get it from the static helpers on `GenresFile` (namespace `Shuffull.Metadata.Models`):
 
 ```csharp
 public class GenresFile
@@ -318,27 +322,32 @@ public class GenresFile
         public string Name { get; set; } = "";
         public List<string> SubGenreNames { get; set; } = [];
     }
+
+    public static string      CanonicalJson  { get; }   // raw embedded JSON
+    public static GenresFile  LoadCanonical();           // deserialized (via Newtonsoft)
 }
 ```
 
-The list defines the **allowed vocabulary** the engine must pick from. Why it must be identical on both
-sides: when Shuffull later consumes funnel-supplied `GeneratedTags`, it maps the genre strings onto its own
-`Genres` table. If the funnel inferred against a different list, the strings won't match Shuffull's
-vocabulary and the mapping degrades.
+So on the funnel side, build your candidate lists straight from the shared list — no local genres file:
 
-**Current state worth knowing:**
+```csharp
+var genres = GenresFile.LoadCanonical();
+var allMainGenreNames = genres.MainGenres.Select(g => g.Name).ToList();
+// after the model picks main genres, gather the sub-genre candidates for those mains:
+var subGenreNamesForChosenMains = genres.MainGenres
+    .Where(g => chosenMainGenres.Contains(g.Name))
+    .SelectMany(g => g.SubGenreNames)
+    .Distinct()
+    .ToList();
+```
 
-- Shuffull seeds its `Genres` table from a `genres.json` file (a serialized `GenresFile`). In the live
-  Shuffull deployment that file is currently **empty** (`{"MainGenres":[]}`); a populated example exists in
-  the Shuffull repo as `example.genres.json`. Seeding the live list is a known open Shuffull task.
-- There is **not yet** a single shared, versioned master-genre-list artifact. Today it's a local file on
-  each side.
+These feed `GenerateMainGenresRequest.MainGenres` and `GenerateSubGenresRequest.SubGenres` in the
+[reference orchestration](#reference-orchestration) above.
 
-**Open coordination decision:** agree on one canonical master genre list and a single source for it
-(e.g. ship it as an embedded resource / data file inside `Shuffull.Metadata`, or a versioned `genres.json`
-both sides load). Until that exists, keep the two files byte-identical manually and treat any change as a
-breaking, coordinated change. (Note: `example.genres.json` uses camelCase keys and trailing commas — valid
-for Newtonsoft, but it would break a `System.Text.Json` reader. Load it with Newtonsoft.)
+**How Shuffull uses it:** Shuffull seeds its `Genres` table from a local `genres.json` file so a deployment
+can override the list. That file is now *seeded from* `GenresFile.CanonicalJson` on first run (an existing
+file is left untouched), so a fresh Shuffull starts with the identical vocabulary. Changing the canonical
+list = editing `Resources/genres.json` in `Shuffull.Metadata` and bumping the version both sides consume.
 
 ---
 
@@ -361,11 +370,10 @@ consumption work.
 - [ ] Replace the funnel's local `SongExportDetails` with `Shuffull.Metadata.Contracts.SongImportDetails`;
       serialize the drop with `Newtonsoft.Json` (PascalCase, `ExternalSource` = `1`).
 - [ ] Keep the existing two-file drop (audio named `{ExternalSongId}{FileExtension}` + a `.json`).
-- [ ] (Optional, the valuable part) Load the **same** master genre list, run the 3-call engine orchestration
-      with funnel context, and attach the resulting `GeneratedSongTags` as `GeneratedTags`. On any error,
-      leave it null.
+- [ ] (Optional, the valuable part) Build candidate lists from `GenresFile.LoadCanonical()` (the shared
+      embedded list), run the 3-call engine orchestration with funnel context, and attach the resulting
+      `GeneratedSongTags` as `GeneratedTags`. On any error, leave it null.
 - [ ] Provide an `OpenAIConfiguration` (ApiKey + ModelName at minimum) and a structured-output-capable model.
-- [ ] Agree with the Shuffull side on the single source of the master genre list.
 
 ---
 
