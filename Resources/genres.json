@@ -17,7 +17,9 @@
         "Soft Rock",
         "Metalcore",
         "K-Rock",
-        "J-Rock"
+        "J-Rock",
+        "Anime",
+        "Vocaloid"
       ]
     },
     {
@@ -27,11 +29,19 @@
         "Pop Rock",
         "Soft Rock",
         "Indie Rock",
+        "Indie Pop",
         "Country Pop",
+        "City Pop",
         "Neo-Soul",
         "Lo-fi",
         "K-Pop",
         "J-Pop",
+        "Vocaloid",
+        "Anime",
+        "Future Bass",
+        "Disco",
+        "Folk",
+        "Singer-Songwriter",
         "Vaporwave",
         "Trap"
       ]
@@ -41,8 +51,12 @@
       "SubGenreNames": [
         "Metal",
         "Heavy Metal",
+        "Thrash Metal",
         "Death Metal",
+        "Black Metal",
+        "Power Metal",
         "Metalcore",
+        "Djent",
         "Progressive Rock",
         "Hard Rock"
       ]
@@ -60,10 +74,12 @@
         "Trap",
         "Lo-fi",
         "Vaporwave",
+        "Synthwave",
+        "Ambient",
+        "Chiptune",
+        "Future Bass",
         "Video Game",
-        "Loud",
-        "High BPM",
-        "High Energy"
+        "Vocaloid"
       ]
     },
     {
@@ -74,7 +90,8 @@
         "Trap",
         "Neo-Soul",
         "Funk",
-        "Soul"
+        "Soul",
+        "Disco"
       ]
     },
     {
@@ -106,7 +123,9 @@
         "Alt-Country",
         "Bluegrass",
         "Americana",
-        "Folk"
+        "Folk",
+        "Sea Shanty",
+        "Singer-Songwriter"
       ]
     },
     {
