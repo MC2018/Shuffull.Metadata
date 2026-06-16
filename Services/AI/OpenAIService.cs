@@ -16,8 +16,9 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
         {
             new UserChatMessage(
                 "You will be provided a song name, its artist(s), and list of main genres.\n" +
+                "You do NOT have internet access. Infer everything from your own knowledge and the provided context only.\n" +
                 "Based on the song info, determine between 1 and 3 main genres that best fit the song, only from the list provided.\n" +
-                "Validate your work."),
+                "Always give your best estimate. Never refuse, never ask for clarification, never say you cannot verify, and never mention browsing or the internet."),
             new AssistantChatMessage("Understood. Send the information."),
             new UserChatMessage(
                 $"Song name: {request.SongName}\n" +

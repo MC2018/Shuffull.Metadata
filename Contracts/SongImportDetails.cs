@@ -28,4 +28,8 @@ public record SongImportDetails(
     string? TargetPlaylistName,
     bool LikelyOriginalArtist,
     ExternalSource ExternalSource,
-    GeneratedSongTags? GeneratedTags = null);
+    GeneratedSongTags? GeneratedTags = null,
+    // True when the user liked the source song on the external platform (a YouTube / YT Music "Liked videos"
+    // item). Shuffull may auto-like the song on import. Optional with a false default, so older payloads that
+    // omit it remain backward-compatible.
+    bool MarkAsLiked = false);
