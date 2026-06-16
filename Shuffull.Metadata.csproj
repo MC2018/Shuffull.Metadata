@@ -13,9 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Canonical master genre list shared by Shuffull and the YoutubeFunnel.
+    <!-- Canonical master vocabularies shared by Shuffull and the YoutubeFunnel.
          LogicalName keeps the manifest name stable regardless of root namespace/folder. -->
     <EmbeddedResource Include="Resources/genres.json" LogicalName="genres.json" />
+    <EmbeddedResource Include="Resources/moods.json" LogicalName="moods.json" />
   </ItemGroup>
 
 </Project>

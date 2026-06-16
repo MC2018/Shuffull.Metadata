@@ -32,4 +32,8 @@ public record SongImportDetails(
     // True when the user liked the source song on the external platform (a YouTube / YT Music "Liked videos"
     // item). Shuffull may auto-like the song on import. Optional with a false default, so older payloads that
     // omit it remain backward-compatible.
-    bool MarkAsLiked = false);
+    bool MarkAsLiked = false,
+    // Estimated tempo in beats per minute, derived from the audio by the producer (best-effort beat tracking).
+    // Null when the producer could not determine it (analysis failed, too few beats, an implausible result, or
+    // the producer doesn't compute BPM at all). Optional with a null default for backward compatibility.
+    int? Bpm = null);

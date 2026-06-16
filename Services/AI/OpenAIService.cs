@@ -156,21 +156,27 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
     // TODO: potentially include metadata as an optional field in the database when importing, and include things like upload date, etc.
     public async Task<Result<GenerateOtherSongDetailsResponse>> GenerateOtherSongDetailsAsync(GenerateOtherSongDetailsRequest request, CancellationToken cancellationToken = default!)
     {
+        // Null candidate list = mood inference disabled (e.g. older callers that don't supply one). Energy is
+        // independent, so it is still requested either way.
+        var candidateMoods = request.CandidateMoods ?? [];
         var messages = new List<ChatMessage>()
         {
             new UserChatMessage(
-                "You will be provided a song name, its artist(s), and optional context.\n" +
+                "You will be provided a song name, its artist(s), a list of candidate moods, and optional context.\n" +
                 "You do NOT have internet access. Infer everything from your own knowledge and the provided context only.\n" +
-                "Return the prominent languages used in the lyrics, and the song's original release time period.\n" +
+                "Return the prominent languages used in the lyrics, the song's original release time period, the song's mood(s), and an energy level.\n" +
                 "Always give your single best estimate. Never refuse, never say you cannot verify, and never mention browsing, the internet, or needing more information.\n" +
                 "If the song is instrumental (no lyrics), return exactly [\"Instrumental\"] for the languages.\n" +
                 "Each language must be a single bare language name such as \"Japanese\" or \"English\" - no sentences, no notes.\n" +
                 "For the time period, return only a decade if post-1900 (such as \"1930s\" or \"2010s\"), otherwise only a century (such as \"1700s\" or \"1800s\") - a single token, no extra words.\n" +
+                "For moods, choose between 1 and 3 that best fit the song, ONLY from the provided candidate mood list - copy the names exactly. If none fit well, return an empty list.\n" +
+                "For energy, return a single integer from 1 to 10 describing the song's overall intensity/drive (1 = calm, sparse, gentle; 10 = intense, fast, hard-hitting). If a measured tempo (BPM) is given in the context, weigh it heavily - but a fast tempo alone is not high energy if the arrangement is sparse or gentle.\n" +
                 "If you are unsure, pick the most likely option anyway."),
             new AssistantChatMessage("Understood. Send the information."),
             new UserChatMessage(
                 $"Song name: {request.SongName}\n" +
                 $"Artist(s): {string.Join(",", request.ArtistNames)}\n" +
+                $"Candidate moods: {string.Join(", ", candidateMoods)}\n" +
                 (string.IsNullOrWhiteSpace(request.OtherDetailsContext) ? "" : $"\nAdditional context:\n{request.OtherDetailsContext}")),
         };
         var options = new ChatCompletionOptions()
@@ -186,9 +192,14 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                             "languages": {
                                 "type": "array",
                                 "items": { "type": "string" }
-                            }
+                            },
+                            "moods": {
+                                "type": "array",
+                                "items": { "type": "string" }
+                            },
+                            "energy": { "type": "integer" }
                         },
-                        "required": ["timePeriod", "languages"],
+                        "required": ["timePeriod", "languages", "moods", "energy"],
                         "additionalProperties": false
                     }
                  """u8.ToArray()),
@@ -235,7 +246,21 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 cleanLanguages.Add("Instrumental");
             }
 
-            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages };
+            // Moods: keep only values that are actually in the provided candidate list (mirrors the sub-genre
+            // membership guard), trimmed and de-duplicated, capped at 3. An empty list is a valid "none fit".
+            var cleanMoods = (result.Moods ?? [])
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Where(m => candidateMoods.Contains(m, StringComparer.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .ToList();
+
+            // Energy: accept only a sane 1-10 scalar; null out anything outside that range so a bad value never
+            // reaches the hand-off contract.
+            var cleanEnergy = result.Energy is >= 1 and <= 10 ? result.Energy : null;
+
+            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy };
         }
         catch (Exception e)
         {
