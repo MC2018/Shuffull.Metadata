@@ -36,4 +36,8 @@ public record SongImportDetails(
     // Estimated tempo in beats per minute, derived from the audio by the producer (best-effort beat tracking).
     // Null when the producer could not determine it (analysis failed, too few beats, an implausible result, or
     // the producer doesn't compute BPM at all). Optional with a null default for backward compatibility.
-    int? Bpm = null);
+    int? Bpm = null,
+    // Lyrics fetched + aligned by the producer (YT Music first, LRCLIB fallback). Null when none were found,
+    // or for manual uploads / producers that don't fetch lyrics — in which case Shuffull may fetch its own
+    // (LRCLIB-only, since it does not touch YouTube). Optional with a null default for backward compatibility.
+    SongLyrics? Lyrics = null);
