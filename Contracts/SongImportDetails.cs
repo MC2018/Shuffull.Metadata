@@ -26,7 +26,6 @@ public record SongImportDetails(
     string TargetUserId,
     string? TargetPlaylistId,
     string? TargetPlaylistName,
-    bool LikelyOriginalArtist,
     ExternalSource ExternalSource,
     GeneratedSongTags? GeneratedTags = null,
     // True when the user liked the source song on the external platform (a YouTube / YT Music "Liked videos"
