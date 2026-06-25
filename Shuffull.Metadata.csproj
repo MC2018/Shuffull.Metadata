@@ -17,6 +17,7 @@
          LogicalName keeps the manifest name stable regardless of root namespace/folder. -->
     <EmbeddedResource Include="Resources/genres.json" LogicalName="genres.json" />
     <EmbeddedResource Include="Resources/moods.json" LogicalName="moods.json" />
+    <EmbeddedResource Include="Resources/themes.json" LogicalName="themes.json" />
   </ItemGroup>
 
 </Project>
