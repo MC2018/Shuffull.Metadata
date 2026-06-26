@@ -39,4 +39,8 @@ public record SongImportDetails(
     // Lyrics fetched + aligned by the producer (YT Music first, LRCLIB fallback). Null when none were found,
     // or for manual uploads / producers that don't fetch lyrics — in which case Shuffull may fetch its own
     // (LRCLIB-only, since it does not touch YouTube). Optional with a null default for backward compatibility.
-    SongLyrics? Lyrics = null);
+    SongLyrics? Lyrics = null,
+    // Shuffull SongId this import should REPLACE in place (re-sourced audio for a song flagged as poor quality).
+    // Null = a normal new-song import. When set, Shuffull overwrites that song's audio/tags/metadata while
+    // keeping its id and every user association (likes, playlists, recently-played). Optional/null for back-compat.
+    string? ReplacesSongId = null);
