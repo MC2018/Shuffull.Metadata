@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Shuffull.Metadata.Enums;
 using Shuffull.Metadata.Models;
 
@@ -43,4 +44,11 @@ public record SongImportDetails(
     // Shuffull SongId this import should REPLACE in place (re-sourced audio for a song flagged as poor quality).
     // Null = a normal new-song import. When set, Shuffull overwrites that song's audio/tags/metadata while
     // keeping its id and every user association (likes, playlists, recently-played). Optional/null for back-compat.
-    string? ReplacesSongId = null);
+    string? ReplacesSongId = null,
+    // The producer's vetted display title + ordered artist list. When set, Shuffull uses these as the
+    // AUTHORITATIVE name/artists instead of the audio file's ID3 tags — which a MusicBrainz match on the
+    // producer side can overwrite (collapsing a multi-artist collab into one credit string, or renaming a
+    // song to a mis-matched recording). Null/empty => Shuffull falls back to the file's tags, so manual
+    // uploads and older payloads that omit these remain backward-compatible.
+    string? Name = null,
+    List<string>? Artists = null);
