@@ -1,6 +1,6 @@
 # Funnel ⇆ Shuffull integration (`Shuffull.Metadata`)
 
-This document is for the **YoutubeFunnel** side. It describes the shared contract and the shared
+This document is for the **funnel** side. It describes the shared contract and the shared
 genre-inference engine that now live in the `Shuffull.Metadata` library, and exactly what the funnel
 needs to do to (a) keep producing valid import drops and (b) optionally attach precomputed genres so
 Shuffull can skip its own AI call.
@@ -46,7 +46,7 @@ What YouTube would ever patch is the scraping (yt-dlp ciphers, rotation, etc.) �
 So the genre engine has no reason to be private and is fine to share. The safe dependency direction is:
 
 ```
-  private YoutubeFunnel  ──references──▶  public Shuffull.Metadata  ◀──references──  Shuffull.Site
+  private funnel  ──references──▶  public Shuffull.Metadata  ◀──references──  Shuffull.Site
 ```
 
 Nothing flows back into the funnel; `Shuffull.Metadata` never references Shuffull.Site or the funnel. The

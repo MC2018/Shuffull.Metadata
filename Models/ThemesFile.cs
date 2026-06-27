@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 namespace Shuffull.Metadata.Models;
 
 /// <summary>
-/// The canonical master theme vocabulary that both Shuffull and the YoutubeFunnel infer against, mirroring
+/// The canonical master theme vocabulary that both Shuffull and the producer infer against, mirroring
 /// <see cref="MoodsFile"/>. Themes are cross-cutting origin/relationship labels (Anime, Vocaloid, Cover,
 /// Parody, Christmas …) — NOT sonic genres, eras, languages, or moods. Unlike those, a theme is OPTIONAL and
 /// sparse: most songs have none. The AI picks 0-2 of these per song only when clearly warranted; anything
@@ -21,7 +21,7 @@ public class ThemesFile
     public List<string> Themes { get; set; } = [];
 
     /// <summary>
-    /// The canonical master theme list, embedded in this assembly, that both Shuffull and the YoutubeFunnel
+    /// The canonical master theme list, embedded in this assembly, that both Shuffull and the producer
     /// must infer against. This is the single shared source of the allowed theme vocabulary.
     /// </summary>
     public static string CanonicalJson

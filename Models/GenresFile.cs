@@ -21,7 +21,7 @@ public class GenresFile
 
     /// <summary>
     /// The canonical master genre list, embedded in this assembly, that both Shuffull and the
-    /// YoutubeFunnel must infer against. This is the single shared source of the allowed genre
+    /// the producer must infer against. This is the single shared source of the allowed genre
     /// vocabulary: generated genres must be drawn from these names so they map cleanly onto
     /// Shuffull's <c>Genres</c> table. Both sides reference this assembly, so the list can't drift.
     /// </summary>

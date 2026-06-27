@@ -1,7 +1,7 @@
 namespace Shuffull.Metadata.Models;
 
 /// <summary>
-/// Lyrics for a song, fetched and aligned by the producer (the YoutubeFunnel) and handed to Shuffull on
+/// Lyrics for a song, fetched and aligned by the producer (the producer) and handed to Shuffull on
 /// import. <see cref="Synced"/> is LRC text (<c>[mm:ss.xx]line</c>). For YT-Music-sourced lyrics it has
 /// already been shifted to compensate for any leading silence the producer trimmed from the audio (those
 /// lyrics are timed to the exact track we downloaded); LRCLIB-sourced lyrics are timed to a different

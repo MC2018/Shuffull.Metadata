@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 namespace Shuffull.Metadata.Models;
 
 /// <summary>
-/// The canonical master mood vocabulary that both Shuffull and the YoutubeFunnel infer against, mirroring
+/// The canonical master mood vocabulary that both Shuffull and the producer infer against, mirroring
 /// <see cref="GenresFile"/>. Inferred moods must be drawn from this fixed list so they map cleanly onto a
 /// shared, stable set of tags rather than free-form prose. The list is embedded in this assembly (see
 /// Shuffull.Metadata.csproj) so both sides reference the same source and the vocabulary can't drift. The AI
@@ -21,7 +21,7 @@ public class MoodsFile
     public List<string> Moods { get; set; } = [];
 
     /// <summary>
-    /// The canonical master mood list, embedded in this assembly, that both Shuffull and the YoutubeFunnel
+    /// The canonical master mood list, embedded in this assembly, that both Shuffull and the producer
     /// must infer against. This is the single shared source of the allowed mood vocabulary.
     /// </summary>
     public static string CanonicalJson
