@@ -165,15 +165,15 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
             new UserChatMessage(
                 "You will be provided a song name, its artist(s), a list of candidate moods, a list of candidate themes, and optional context.\n" +
                 "You do NOT have internet access. Infer everything from your own knowledge and the provided context only.\n" +
-                "Return the prominent languages used in the lyrics, the song's original release time period, the song's mood(s), an energy level, a corrected tempo, and any matching theme(s).\n" +
+                "Return the prominent languages used in the lyrics, the song's original release time period, the song's mood(s), an energy level, the song's true tempo (with a recognition flag), and any matching theme(s).\n" +
                 "Always give your single best estimate. Never refuse, never say you cannot verify, and never mention browsing, the internet, or needing more information.\n" +
                 "If the song is instrumental (no lyrics), return exactly [\"Instrumental\"] for the languages.\n" +
                 "If lyrics are included in the additional context, use them as the definitive source for the languages and a strong signal for the mood(s).\n" +
                 "Each language must be a single bare language name such as \"Japanese\" or \"English\" - no sentences, no notes.\n" +
                 "For the time period, return only a decade if post-1900 (such as \"1930s\" or \"2010s\"), otherwise only a century (such as \"1700s\" or \"1800s\") - a single token, no extra words.\n" +
                 "For moods, choose between 1 and 3 that best fit the song, ONLY from the provided candidate mood list - copy the names exactly. If none fit well, return an empty list.\n" +
-                "For correctedBpm: a measured tempo (BPM) may be provided. Automatic beat trackers commonly report HALF or DOUBLE the true tempo (and occasionally a 3:2 ratio), so it is often wrong by an octave - e.g. a drum & bass track measured at 87 is really 174, a dubstep track measured at 70 is really 140. Using the genre and your knowledge of the track, return the song's TRUE tempo as correctedBpm; it MUST be the measured value, or its half, double, 3:2 (x1.5), or 2:3 (/1.5), rounded to a whole number. If no measured tempo is provided, return null for correctedBpm.\n" +
-                "For energy, return a single integer from 1 to 10 describing the song's overall intensity/drive (1 = calm, sparse, gentle; 10 = intense, fast, hard-hitting). Weigh the TRUE (corrected) tempo heavily - but a fast tempo alone is not high energy if the arrangement is sparse or gentle.\n" +
+                "For trueBpm and bpmRecognized: a rough measured tempo may be provided, but automatic beat trackers are unreliable on dense electronic music and are frequently wrong (not just by a clean half/double). If you GENUINELY recognise this specific track and know its real production tempo, return that exact BPM as trueBpm and set bpmRecognized=true. Otherwise estimate the most likely tempo from the genre conventions and the measured hint, return it as trueBpm, and set bpmRecognized=false. trueBpm must be a whole number, normally 60-300. If no measured tempo is given and you don't recognise the track, you may still give your best genre-based estimate with bpmRecognized=false.\n" +
+                "For energy, return a single integer from 1 to 10 describing the song's overall intensity/drive (1 = calm, sparse, gentle; 10 = intense, fast, hard-hitting). Weigh the true tempo heavily - but a fast tempo alone is not high energy if the arrangement is sparse or gentle.\n" +
                 "For themes, return between 0 and 2 ONLY from the provided candidate theme list - copy the names exactly. Themes are origin/relationship labels (e.g. Anime, Vocaloid, Cover, Parody, Christmas), NOT sounds; pick one ONLY when you are confident the song genuinely is that (an anime tie-in, a Vocaloid production, a cover, a parody, etc.). Most songs match no theme - return an empty list whenever in doubt.\n" +
                 "If you are unsure, pick the most likely option anyway."),
             new AssistantChatMessage("Understood. Send the information."),
@@ -182,7 +182,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 $"Artist(s): {string.Join(",", request.ArtistNames)}\n" +
                 $"Candidate moods: {string.Join(", ", candidateMoods)}\n" +
                 $"Candidate themes: {string.Join(", ", candidateThemes)}\n" +
-                (request.MeasuredBpm is int measuredBpm ? $"Measured tempo (may be an octave error): {measuredBpm} BPM\n" : "") +
+                (request.MeasuredBpm is int measuredBpm ? $"Measured tempo (rough, often unreliable for electronic music): {measuredBpm} BPM\n" : "") +
                 (string.IsNullOrWhiteSpace(request.OtherDetailsContext) ? "" : $"\nAdditional context:\n{request.OtherDetailsContext}")),
         };
         var options = new ChatCompletionOptions()
@@ -204,13 +204,14 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                                 "items": { "type": "string" }
                             },
                             "energy": { "type": "integer" },
-                            "correctedBpm": { "type": ["integer", "null"] },
+                            "trueBpm": { "type": ["integer", "null"] },
+                            "bpmRecognized": { "type": "boolean" },
                             "themes": {
                                 "type": "array",
                                 "items": { "type": "string" }
                             }
                         },
-                        "required": ["timePeriod", "languages", "moods", "energy", "correctedBpm", "themes"],
+                        "required": ["timePeriod", "languages", "moods", "energy", "trueBpm", "bpmRecognized", "themes"],
                         "additionalProperties": false
                     }
                  """u8.ToArray()),
@@ -271,10 +272,9 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
             // reaches the hand-off contract.
             var cleanEnergy = result.Energy is >= 1 and <= 10 ? result.Energy : null;
 
-            // Corrected tempo: keep only a plausible musical value. The caller (BpmOctaveCorrection.Resolve)
-            // still snaps this back to a real octave of the measured tempo before trusting it, so this is just a
-            // coarse sanity gate against a wild number.
-            var cleanCorrectedBpm = result.CorrectedBpm is >= 20 and <= 400 ? result.CorrectedBpm : null;
+            // True tempo: keep only a plausible musical value (coarse sanity gate against a wild number). The
+            // caller (BpmResolver) decides whether to trust it over the measurement based on bpmRecognized.
+            var cleanTrueBpm = result.TrueBpm is >= 40 and <= 300 ? result.TrueBpm : null;
 
             // Themes: keep only values actually in the provided candidate list (membership guard, like moods),
             // trimmed and de-duplicated, capped at 2. Empty is the common, valid "no theme".
@@ -286,7 +286,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 .Take(2)
                 .ToList();
 
-            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy, Themes = cleanThemes, CorrectedBpm = cleanCorrectedBpm };
+            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy, Themes = cleanThemes, TrueBpm = cleanTrueBpm };
         }
         catch (Exception e)
         {
