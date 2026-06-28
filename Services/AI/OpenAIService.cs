@@ -170,7 +170,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 "If the song is instrumental (no lyrics), return exactly [\"Instrumental\"] for the languages.\n" +
                 "If lyrics are included in the additional context, use them as the definitive source for the languages and a strong signal for the mood(s).\n" +
                 "Each language must be a single bare language name such as \"Japanese\" or \"English\" - no sentences, no notes.\n" +
-                "For the time period, return only a decade if post-1900 (such as \"1930s\" or \"2010s\"), otherwise only a century (such as \"1700s\" or \"1800s\") - a single token, no extra words.\n" +
+                "For the time period, you MUST ALWAYS return a valid era token and NEVER an empty string. If you are unsure of the exact era, give your best-guess decade from the genre/style/artist (most modern electronic, EDM, and video-game music is \"2010s\" or \"2020s\"). Return a decade if post-1900 (such as \"1930s\" or \"2010s\"), otherwise a century (such as \"1700s\" or \"1800s\") - a single token ending in \"0s\", no extra words, never blank.\n" +
                 "For moods, choose between 1 and 3 that best fit the song, ONLY from the provided candidate mood list - copy the names exactly. If none fit well, return an empty list.\n" +
                 "For trueBpm and bpmRecognized: a rough measured tempo may be provided, but automatic beat trackers are unreliable on dense electronic music and are frequently wrong (not just by a clean half/double). If you GENUINELY recognise this specific track and know its real production tempo, return that exact BPM as trueBpm and set bpmRecognized=true. Otherwise estimate the most likely tempo from the genre conventions and the measured hint, return it as trueBpm, and set bpmRecognized=false. trueBpm must be a whole number, normally 60-300. If no measured tempo is given and you don't recognise the track, you may still give your best genre-based estimate with bpmRecognized=false.\n" +
                 "For energy, return a single integer from 1 to 10 describing the song's overall intensity/drive (1 = calm, sparse, gentle; 10 = intense, fast, hard-hitting). Weigh the true tempo heavily - but a fast tempo alone is not high energy if the arrangement is sparse or gentle.\n" +
@@ -219,78 +219,98 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
             )
         };
 
-        try
+        // The time period is REQUIRED (an empty one becomes an empty-named tag on import), but the model
+        // occasionally omits it. Regenerate up to a few times and only fail the whole call if it never produces
+        // a valid decade/century. A Result.Error is not cached by the caller, so a later pass also retries.
+        const int maxAttempts = 3;
+        Exception? lastError = null;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var client = new ChatClient(model: _config.ModelName, apiKey: _config.ApiKey);
-            var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
-            var resultStr = completion.Content[0].Text;
-            var result = JsonConvert.DeserializeObject<GenerateOtherSongDetailsResponse>(resultStr);
-
-            if (result == null)
+            if (cancellationToken.IsCancellationRequested)
             {
-                throw new Exception("Failed to parse OtherSongDetailsResponse from AI response.");
+                break;
             }
 
-            // Post-parse guard. The model occasionally ignores the "best guess, no browsing" instruction and
-            // returns a refusal/disclaimer ("Unable to verify - I do not have browsing access ...") instead of
-            // a value; the strict JSON schema then forces that prose into the string fields. Sanitize so a
-            // refusal never reaches the hand-off contract.
-            var rawLanguageCount = result.Languages.Count;
-
-            // TimePeriod: keep only a decade/century token (ends in "0s"); salvage one embedded in prose
-            // (e.g. "2020s (cannot verify ...)" -> "2020s"), otherwise blank it rather than ship a sentence.
-            var periodMatch = System.Text.RegularExpressions.Regex.Match(result.TimePeriod ?? "", @"\b\d{3,4}0s\b");
-            var cleanTimePeriod = periodMatch.Success ? periodMatch.Value : "";
-
-            // Languages: drop anything that isn't a plausible bare language name. Real names are short and at
-            // most a couple of words ("Japanese", "Mandarin Chinese"); refusal prose is long and many-worded.
-            var cleanLanguages = result.Languages
-                .Where(l => !string.IsNullOrWhiteSpace(l))
-                .Select(l => l.Trim())
-                .Where(l => l.Length <= 30 && l.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 3)
-                .ToList();
-
-            // Only treat a genuinely-empty model response as instrumental. If the model DID return languages
-            // but they were all prose (filtered to empty), that was a refusal, not an instrumental track - leave
-            // it blank instead of mislabeling it.
-            if (cleanLanguages.Count == 0 && rawLanguageCount == 0)
+            try
             {
-                cleanLanguages.Add("Instrumental");
+                var client = new ChatClient(model: _config.ModelName, apiKey: _config.ApiKey);
+                var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
+                var resultStr = completion.Content[0].Text;
+                var result = JsonConvert.DeserializeObject<GenerateOtherSongDetailsResponse>(resultStr);
+
+                if (result == null)
+                {
+                    throw new Exception("Failed to parse OtherSongDetailsResponse from AI response.");
+                }
+
+                // Post-parse guard. The model occasionally ignores the "best guess, no browsing" instruction and
+                // returns a refusal/disclaimer ("Unable to verify - I do not have browsing access ...") instead
+                // of a value; the strict JSON schema then forces that prose into the string fields. Sanitize so
+                // a refusal never reaches the hand-off contract.
+                var rawLanguageCount = result.Languages.Count;
+
+                // TimePeriod is REQUIRED: a single decade/century token (salvaged from prose if needed). When the
+                // model gives none, regenerate rather than ship an empty era that becomes an empty-named tag.
+                var cleanTimePeriod = TimePeriodFormat.Normalize(result.TimePeriod);
+                if (cleanTimePeriod is null)
+                {
+                    lastError = new Exception($"AI returned no valid time period (raw: '{result.TimePeriod}').");
+                    continue;
+                }
+
+                // Languages: drop anything that isn't a plausible bare language name. Real names are short and at
+                // most a couple of words ("Japanese", "Mandarin Chinese"); refusal prose is long and many-worded.
+                var cleanLanguages = result.Languages
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .Select(l => l.Trim())
+                    .Where(l => l.Length <= 30 && l.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 3)
+                    .ToList();
+
+                // Only treat a genuinely-empty model response as instrumental. If the model DID return languages
+                // but they were all prose (filtered to empty), that was a refusal, not an instrumental track -
+                // leave it blank instead of mislabeling it.
+                if (cleanLanguages.Count == 0 && rawLanguageCount == 0)
+                {
+                    cleanLanguages.Add("Instrumental");
+                }
+
+                // Moods: keep only values that are actually in the provided candidate list (mirrors the sub-genre
+                // membership guard), trimmed and de-duplicated, capped at 3. An empty list is a valid "none fit".
+                var cleanMoods = (result.Moods ?? [])
+                    .Where(m => !string.IsNullOrWhiteSpace(m))
+                    .Select(m => m.Trim())
+                    .Where(m => candidateMoods.Contains(m, StringComparer.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(3)
+                    .ToList();
+
+                // Energy: accept only a sane 1-10 scalar; null out anything outside that range so a bad value
+                // never reaches the hand-off contract.
+                var cleanEnergy = result.Energy is >= 1 and <= 10 ? result.Energy : null;
+
+                // True tempo: keep only a plausible musical value (coarse sanity gate against a wild number). The
+                // caller (BpmResolver) decides whether to trust it over the measurement based on bpmRecognized.
+                var cleanTrueBpm = result.TrueBpm is >= 40 and <= 300 ? result.TrueBpm : null;
+
+                // Themes: keep only values actually in the provided candidate list (membership guard, like moods),
+                // trimmed and de-duplicated, capped at 2. Empty is the common, valid "no theme".
+                var cleanThemes = (result.Themes ?? [])
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .Select(t => t.Trim())
+                    .Where(t => candidateThemes.Contains(t, StringComparer.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(2)
+                    .ToList();
+
+                return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy, Themes = cleanThemes, TrueBpm = cleanTrueBpm };
             }
-
-            // Moods: keep only values that are actually in the provided candidate list (mirrors the sub-genre
-            // membership guard), trimmed and de-duplicated, capped at 3. An empty list is a valid "none fit".
-            var cleanMoods = (result.Moods ?? [])
-                .Where(m => !string.IsNullOrWhiteSpace(m))
-                .Select(m => m.Trim())
-                .Where(m => candidateMoods.Contains(m, StringComparer.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(3)
-                .ToList();
-
-            // Energy: accept only a sane 1-10 scalar; null out anything outside that range so a bad value never
-            // reaches the hand-off contract.
-            var cleanEnergy = result.Energy is >= 1 and <= 10 ? result.Energy : null;
-
-            // True tempo: keep only a plausible musical value (coarse sanity gate against a wild number). The
-            // caller (BpmResolver) decides whether to trust it over the measurement based on bpmRecognized.
-            var cleanTrueBpm = result.TrueBpm is >= 40 and <= 300 ? result.TrueBpm : null;
-
-            // Themes: keep only values actually in the provided candidate list (membership guard, like moods),
-            // trimmed and de-duplicated, capped at 2. Empty is the common, valid "no theme".
-            var cleanThemes = (result.Themes ?? [])
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Select(t => t.Trim())
-                .Where(t => candidateThemes.Contains(t, StringComparer.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(2)
-                .ToList();
-
-            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy, Themes = cleanThemes, TrueBpm = cleanTrueBpm };
+            catch (Exception e)
+            {
+                lastError = e;
+            }
         }
-        catch (Exception e)
-        {
-            return Result.Error<GenerateOtherSongDetailsResponse>(e);
-        }
+
+        return Result.Error<GenerateOtherSongDetailsResponse>(
+            lastError ?? new Exception("Other-details generation failed to produce a valid time period."));
     }
 }
