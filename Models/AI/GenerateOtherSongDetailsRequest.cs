@@ -13,4 +13,8 @@ public record GenerateOtherSongDetailsRequest(
     List<string> ArtistNames,
     string? OtherDetailsContext = null,
     List<string>? CandidateMoods = null,
-    List<string>? CandidateThemes = null);
+    List<string>? CandidateThemes = null,
+    // Measured tempo from the audio. When supplied, the model also returns a genre-aware true tempo
+    // (CorrectedBpm) so half/double-time tracker errors can be fixed, and uses the TRUE tempo when judging
+    // energy. Null disables tempo correction. Trailing optional so existing callers keep compiling.
+    int? MeasuredBpm = null);
