@@ -51,4 +51,19 @@ public record SongImportDetails(
     // song to a mis-matched recording). Null/empty => Shuffull falls back to the file's tags, so manual
     // uploads and older payloads that omit these remain backward-compatible.
     string? Name = null,
-    List<string>? Artists = null);
+    List<string>? Artists = null,
+    // --- Provenance / regeneration inputs (all optional; null for older payloads & manual uploads) ---
+    // The AI model that produced GeneratedTags. Persisted on the Song so a future "re-tag with a better
+    // model" pass can target exactly the songs whose metadata came from a weaker model. Null when Shuffull
+    // generated the tags itself (it stamps its own model in that case).
+    string? TagModel = null,
+    // The raw measured tempo (best-effort beat tracking) that was fed to the AI as a hint - distinct from the
+    // resolved Bpm above (which prefers the AI's recognised tempo). Persisted so a tag regeneration can replay
+    // the same input without re-analysing the audio.
+    int? MeasuredBpm = null,
+    // Objective audio-shape features measured from the exported track, used to ground the AI energy estimate
+    // (EBU R128 loudness range / crest factor / onset density). Persisted so energy can be regenerated later
+    // from stored inputs instead of re-downloading + re-analysing the audio. Null when unmeasured.
+    double? LoudnessRangeLu = null,
+    double? CrestFactorDb = null,
+    double? OnsetsPerSecond = null);
