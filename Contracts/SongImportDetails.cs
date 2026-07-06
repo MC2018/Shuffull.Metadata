@@ -69,4 +69,9 @@ public record SongImportDetails(
     double? OnsetsPerSecond = null,
     // Authoritative original release YEAR (from a reliable MusicBrainz match), or null when unknown / not
     // reliable. Persisted so a re-tag can re-apply the correct era instead of regressing to the AI's guess.
-    int? OriginalReleaseYear = null);
+    int? OriginalReleaseYear = null,
+    // Exploratory ("audition") ingest: the producer skipped the paid genre calls for this song, so it arrives
+    // untagged for the user to try. Shuffull persists it as provisional (Song.Exploratory) and does NOT
+    // self-generate tags; the song is enriched later only if the user keeps it (a re-tag clears the flag).
+    // Default false = a normal, fully-tagged import.
+    bool Exploratory = false);
