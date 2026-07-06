@@ -66,4 +66,7 @@ public record SongImportDetails(
     // from stored inputs instead of re-downloading + re-analysing the audio. Null when unmeasured.
     double? LoudnessRangeLu = null,
     double? CrestFactorDb = null,
-    double? OnsetsPerSecond = null);
+    double? OnsetsPerSecond = null,
+    // Authoritative original release YEAR (from a reliable MusicBrainz match), or null when unknown / not
+    // reliable. Persisted so a re-tag can re-apply the correct era instead of regressing to the AI's guess.
+    int? OriginalReleaseYear = null);
