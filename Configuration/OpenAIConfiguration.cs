@@ -12,12 +12,19 @@ public class OpenAIConfiguration
     public string StrongModelName { get; set; } = string.Empty;
     // Legacy single-model key, kept so existing "AI:OpenAI:ModelName" config still binds (used as the strong model).
     public string ModelName { get; set; } = string.Empty;
+    // The cheap ("weak") model for budget work (coarse filters, Standard-tier tagging). Optional: when unset,
+    // the strong model is used everywhere, so weak-model behavior is strictly opt-in.
+    public string WeakModelName { get; set; } = string.Empty;
     public string InstructionFile { get; set; } = string.Empty;
     public string ApiEndpoint { get; set; } = string.Empty;
 
     /// <summary>The effective strong model: <see cref="StrongModelName"/>, falling back to the legacy <see cref="ModelName"/>.</summary>
     [JsonIgnore]
     public string ResolvedStrongModelName => !string.IsNullOrWhiteSpace(StrongModelName) ? StrongModelName : ModelName;
+
+    /// <summary>The effective weak model: <see cref="WeakModelName"/>, falling back to the strong model.</summary>
+    [JsonIgnore]
+    public string ResolvedWeakModelName => !string.IsNullOrWhiteSpace(WeakModelName) ? WeakModelName : ResolvedStrongModelName;
 
     public class SupportedApiEndpoints
     {

@@ -50,7 +50,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
 
         try
         {
-            var client = new ChatClient(model: _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
+            var client = new ChatClient(model: request.ModelOverride ?? _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
             var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
             var resultStr = completion.Content[0].Text;
             var result = JsonConvert.DeserializeObject<GenerateMainGenresResponse>(resultStr);
@@ -122,7 +122,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
 
         try
         {
-            var client = new ChatClient(model: _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
+            var client = new ChatClient(model: request.ModelOverride ?? _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
             var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
             var resultStr = completion.Content[0].Text;
             var result = JsonConvert.DeserializeObject<GenerateSubGenresResponse>(resultStr);
@@ -233,7 +233,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
 
             try
             {
-                var client = new ChatClient(model: _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
+                var client = new ChatClient(model: request.ModelOverride ?? _config.ResolvedStrongModelName, apiKey: _config.ApiKey);
                 var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
                 var resultStr = completion.Content[0].Text;
                 var result = JsonConvert.DeserializeObject<GenerateOtherSongDetailsResponse>(resultStr);
