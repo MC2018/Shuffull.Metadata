@@ -18,8 +18,10 @@
         "Metalcore",
         "K-Rock",
         "J-Rock",
-        "Anime",
-        "Vocaloid"
+        "Vocaloid",
+        "Emo",
+        "Folk Rock",
+        "Country Rock"
       ]
     },
     {
@@ -37,13 +39,13 @@
         "K-Pop",
         "J-Pop",
         "Vocaloid",
-        "Anime",
         "Future Bass",
         "Disco",
         "Folk",
         "Singer-Songwriter",
         "Vaporwave",
-        "Trap"
+        "Trap",
+        "Emo"
       ]
     },
     {
@@ -78,8 +80,9 @@
         "Ambient",
         "Chiptune",
         "Future Bass",
-        "Video Game",
-        "Vocaloid"
+        "Vocaloid",
+        "Trip-Hop",
+        "Electro"
       ]
     },
     {
@@ -91,7 +94,8 @@
         "Neo-Soul",
         "Funk",
         "Soul",
-        "Disco"
+        "Disco",
+        "Lo-fi"
       ]
     },
     {
@@ -101,7 +105,12 @@
         "Funk",
         "Neo-Soul",
         "Blues",
-        "Fusion"
+        "Fusion",
+        "Swing",
+        "Free Jazz",
+        "Latin Jazz",
+        "Smooth Jazz",
+        "Big Band"
       ]
     },
     {
@@ -125,7 +134,10 @@
         "Americana",
         "Folk",
         "Sea Shanty",
-        "Singer-Songwriter"
+        "Singer-Songwriter",
+        "Honky Tonk",
+        "Western",
+        "Country Rock"
       ]
     },
     {
@@ -135,16 +147,19 @@
         "Salsa",
         "Latin Pop",
         "Latin Rock",
+        "Latin Jazz",
         "Samba",
         "Tango",
         "Bossa Nova",
-        "Mambo"
+        "Mambo",
+        "Reggaeton"
       ]
     },
     {
       "Name": "Reggae",
       "SubGenreNames": [
         "Reggae",
+        "Reggaeton",
         "Ska"
       ]
     },
@@ -152,6 +167,7 @@
       "Name": "Classical",
       "SubGenreNames": [
         "Classical",
+        "Classical Era",
         "Romantic",
         "Modern Classical",
         "Contemporary Classical",
@@ -161,7 +177,10 @@
         "Baroque",
         "Renaissance",
         "Opera",
-        "March Music"
+        "March Music",
+        "Chamber Music",
+        "Brass Ensemble",
+        "Concert Band"
       ]
     },
     {
