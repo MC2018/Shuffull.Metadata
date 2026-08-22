@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
+using System.ClientModel;
 using Newtonsoft.Json;
 using Nut.Results;
+using OpenAI;
 using OpenAI.Chat;
 using Shuffull.Metadata.Configuration;
 using Shuffull.Metadata.Models.AI;
@@ -10,6 +12,29 @@ namespace Shuffull.Metadata.Services.AI;
 public class OpenAIService(OpenAIConfiguration config) : IAIService
 {
     private readonly OpenAIConfiguration _config = config;
+
+    /// <summary>
+    /// The single place a chat client is built, so the configured host applies to every call rather than to
+    /// whichever ones remembered to opt in. An empty BaseUrl keeps the SDK's own default endpoint (OpenAI).
+    /// </summary>
+    /// <summary>
+    /// Batch is OpenAI's own endpoint, so it is available only when this instance points at OpenAI itself.
+    /// Redirected at an OpenAI-COMPATIBLE vendor (BaseUrl set), the chat calls still work and batching does not.
+    /// </summary>
+    public bool SupportsBatch => string.IsNullOrWhiteSpace(_config.BaseUrl);
+
+    private ChatClient CreateChatClient(string model)
+    {
+        if (string.IsNullOrWhiteSpace(_config.BaseUrl))
+        {
+            return new ChatClient(model: model, apiKey: _config.ApiKey);
+        }
+
+        return new ChatClient(
+            model: model,
+            credential: new ApiKeyCredential(_config.ApiKey),
+            options: new OpenAIClientOptions { Endpoint = new Uri(_config.BaseUrl) });
+    }
 
     // ── Shared plumbing so the SYNCHRONOUS and BATCH paths cannot drift ──────────────────────────────
     //
@@ -145,7 +170,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
     {
         try
         {
-            var client = new ChatClient(model: ModelFor(request.ModelOverride), apiKey: _config.ApiKey);
+            var client = CreateChatClient(ModelFor(request.ModelOverride));
             var completion = (await client.CompleteChatAsync(
                 ToMessages(MainGenresPrompt(request)),
                 ToOptions(MainGenresSchemaName, MainGenresSchemaJson),
@@ -229,7 +254,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
     {
         try
         {
-            var client = new ChatClient(model: ModelFor(request.ModelOverride), apiKey: _config.ApiKey);
+            var client = CreateChatClient(ModelFor(request.ModelOverride));
             var completion = (await client.CompleteChatAsync(
                 ToMessages(SubGenresPrompt(request)),
                 ToOptions(SubGenresSchemaName, SubGenresSchemaJson),
@@ -407,7 +432,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
 
             try
             {
-                var client = new ChatClient(model: ModelFor(request.ModelOverride), apiKey: _config.ApiKey);
+                var client = CreateChatClient(ModelFor(request.ModelOverride));
                 var completion = (await client.CompleteChatAsync(messages, options, cancellationToken)).Value;
                 var parsed = ParseOtherSongDetails(completion.Content[0].Text, request);
 

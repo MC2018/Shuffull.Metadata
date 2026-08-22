@@ -24,6 +24,17 @@ public interface IAIService
     private static NotSupportedException Unsupported(string member) =>
         new($"This IAIService implementation does not support the OpenAI Batch API ({member}).");
 
+    /// <summary>
+    /// Whether this instance can actually serve the Batch API. Default FALSE, so anything that has not opted in
+    /// takes the live path rather than throwing from the Build*/Parse* members above.
+    ///
+    /// The batch endpoints are OpenAI's, not part of the chat/completions shape other vendors implement — an
+    /// OpenAI-compatible host such as Meta's Model API has no /v1/batches. Enqueuing work for a provider that
+    /// cannot run a batch would be worse than not batching: the request is stored, the export HOLDS waiting for
+    /// a result, and nothing ever produces one. Callers check this before offering a batch body.
+    /// </summary>
+    public bool SupportsBatch => false;
+
     /// <summary>The chat-completions request body for a batched main-genres call.</summary>
     public string BuildMainGenresBatchBody(GenerateMainGenresRequest request, string? modelOverride = null) =>
         throw Unsupported(nameof(BuildMainGenresBatchBody));
