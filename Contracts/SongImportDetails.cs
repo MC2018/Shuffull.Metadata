@@ -61,8 +61,8 @@ public record SongImportDetails(
     // resolved Bpm above (which prefers the AI's recognised tempo). Persisted so a tag regeneration can replay
     // the same input without re-analysing the audio.
     int? MeasuredBpm = null,
-    // Objective audio-shape features measured from the exported track, used to ground the AI energy estimate
-    // (EBU R128 loudness range / crest factor / onset density). Persisted so energy can be regenerated later
+    // Objective audio-shape features measured from the exported track, used to ground the AI heaviness estimate
+    // (EBU R128 loudness range / crest factor / onset density). Persisted so heaviness can be regenerated later
     // from stored inputs instead of re-downloading + re-analysing the audio. Null when unmeasured.
     double? LoudnessRangeLu = null,
     double? CrestFactorDb = null,
@@ -74,4 +74,7 @@ public record SongImportDetails(
     // untagged for the user to try. Shuffull persists it as provisional (Song.Exploratory) and does NOT
     // self-generate tags; the song is enriched later only if the user keeps it (a re-tag clears the flag).
     // Default false = a normal, fully-tagged import.
-    bool Exploratory = false);
+    bool Exploratory = false,
+    // The TagRevision the GeneratedTags were produced under. Shuffull re-tags a song whose revision is behind
+    // TagRevision.Current, so an older payload (0) is re-scored rather than trusted. Ignored when untagged.
+    int TagRevision = 0);
