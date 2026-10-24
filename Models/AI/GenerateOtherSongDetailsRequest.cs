@@ -15,8 +15,9 @@ public record GenerateOtherSongDetailsRequest(
     List<string>? CandidateMoods = null,
     List<string>? CandidateThemes = null,
     // Measured tempo from the audio. When supplied, the model also returns a genre-aware true tempo
-    // (CorrectedBpm) so half/double-time tracker errors can be fixed, and uses the TRUE tempo when judging
-    // heaviness. Null disables tempo correction. Trailing optional so existing callers keep compiling.
+    // (GenerateOtherSongDetailsResponse.TrueBpm) so half/double-time tracker errors can be fixed. Tempo is not a
+    // heaviness signal on its own; the rubric says so. Null disables tempo correction. Trailing optional so
+    // existing callers keep compiling.
     int? MeasuredBpm = null,
     // Model to run instead of the configured strong model (e.g. the weak model for budget-tier tagging).
     // Null keeps the strong default, so existing callers are unaffected. Trailing optional on purpose.
