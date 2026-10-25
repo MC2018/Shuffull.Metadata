@@ -20,8 +20,9 @@ namespace Shuffull.Metadata.Services.AI;
 public static class TagRevision
 {
     /// <summary>
+    /// 2: loud, dense EDM moved from 7 to 8 on the heaviness scale (Shuffull.Metadata#5).
     /// 1: heaviness replaced energy (shuffull-workspace#41).
     /// 0: everything tagged before revisions existed.
     /// </summary>
-    public const int Current = 1;
+    public const int Current = 2;
 }

@@ -290,19 +290,21 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 // asked for intensity/drive and to weigh tempo heavily, which put upbeat rock and anime openings at 8-9
                 // beside hardcore. The anchors were calibrated against the user's own heavy / rock / J-pop folders
                 // (shuffull-workspace#41); re-check them there before moving a level, and bump TagRevision.Current so
-                // the library is re-scored.
-                "For heaviness, return a single integer from 1 to 10 for how HEAVY the song sounds: distortion, aggression, how hard the kicks, drums and bass hit, how dense and harsh the production is. " +
+                // the library is re-scored. Revision 2 (Shuffull.Metadata#5) moved loud, dense EDM from 7 to 8 by the
+                // user's call: at 7, typical Camellia-tier tracks landed at 7 too. Split levels by style, not by
+                // "clean vs distorted": the model can't hear the song and calls nearly every EDM track clean.
+                "For heaviness, return a single integer from 1 to 10 for how HEAVY and intense the song sounds: distortion, aggression, how hard the kicks, drums and bass hit, how loud, dense and relentless the production is. " +
                 "This is ONE ABSOLUTE scale shared by every genre - never rate relative to the song's own genre. A song that is energetic FOR ITS GENRE is not therefore heavy: an upbeat rock anthem or a fast anime opening is a 6-7, not a 9. " +
                 "Tempo, catchiness and an upbeat or hype mood do NOT make a song heavy on their own. Anchors:\n" +
                 "1-2 = ambient, sleep music, solo piano, gentle acoustic.\n" +
-                "3-4 = soft: ballads, lo-fi, jazz, city pop, soft rock, mellow R&B, quiet orchestral.\n" +
+                "3-4 = soft: ballads, lo-fi, jazz, city pop, soft rock, mellow R&B, chill electronic, quiet orchestral.\n" +
                 "5 = typical mid-tempo pop, J-pop, indie, classic rock, funk, house.\n" +
                 "6 = punchy, driving pop/rock, most anime openings, pop with EDM production, epic orchestral.\n" +
-                "7 = hard-hitting: hard rock (AC/DC), punk, aggressive J-rock, and loud, dense electronic dance music - future bass, trance, melodic dubstep, drum & bass, electro house, big-room drops, and rhythm-game / doujin electronic (lapix, Feryquitous, Srav3R, Kotek) even at its most melodic.\n" +
-                "8 = heavy: heavy metal, metalcore, nu-metal (e.g. Drowning Pool - Bodies), dubstep, hard drum & bass, hardstyle, and the lighter / poppier tracks of hardcore artists (Camellia, t+pazolite, USAO).\n" +
-                "9 = very heavy: full-on hardcore, J-core, frenchcore, gabber and hard rhythm-game tracks (typical Camellia, t+pazolite, USAO, Kobaryo, Laur, DJ Noriken), riddim, death and thrash metal.\n" +
+                "7 = hard-hitting: hard rock (AC/DC), punk, aggressive J-rock, pop-leaning EDM and progressive house, songs with mostly vocal-pop structure over a dance beat.\n" +
+                "8 = heavy: loud, dense electronic dance music - future bass, trance, melodic dubstep, drum & bass, electro house, big-room drops, chiptune EDM, and rhythm-game / doujin electronic (lapix, Feryquitous, Srav3R, Kotek), even when melodic, cute or uplifting; also heavy metal, metalcore, nu-metal (e.g. Drowning Pool - Bodies), dubstep, hardstyle.\n" +
+                "9 = very heavy: hardcore, J-core, frenchcore, gabber, breakcore, artcore with hard kicks, riddim, neurofunk, death and thrash metal, and the typical track of hardcore / rhythm-game boss-song artists (Camellia, t+pazolite, USAO, Kobaryo, Laur, DJ Noriken).\n" +
                 "10 = punishing: wall-to-wall distorted kicks, speedcore, extratone, harsh noise - fatiguing or physically harsh to listen to. Reserve 10 for the most extreme few percent.\n" +
-                "Electronic dance music that stays loud and dense with a steady driving beat is at least 7 unless it is genuinely gentle throughout. Most songs in a typical library are 3-6.\n" +
+                "Electronic dance music that stays loud and dense with a steady driving beat is at least 8 unless it is genuinely gentle (chill, lo-fi, ambient) or mostly a vocal pop song. Rock that is not metal is at most 7. Most songs in a typical library are 3-6.\n" +
                 "For themes, return between 0 and 2 ONLY from the provided candidate theme list - copy the names exactly. Themes are origin/relationship labels (e.g. Anime, Vocaloid, Cover, Parody, Christmas), NOT sounds; pick one ONLY when you are confident the song genuinely is that (an anime tie-in, a Vocaloid production, a cover, a parody, etc.). Most songs match no theme - return an empty list whenever in doubt.\n" +
                 "If you are unsure, pick the most likely option anyway.",
                 $"Song name: {request.SongName}\n" +
