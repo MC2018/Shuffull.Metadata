@@ -292,7 +292,9 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 // (shuffull-workspace#41); re-check them there before moving a level, and bump TagRevision.Current so
                 // the library is re-scored. Revision 2 (Shuffull.Metadata#5) moved loud, dense EDM from 7 to 8 by the
                 // user's call: at 7, typical Camellia-tier tracks landed at 7 too. Split levels by style, not by
-                // "clean vs distorted": the model can't hear the song and calls nearly every EDM track clean.
+                // "clean vs distorted": the model can't hear the song and calls nearly every EDM track clean. "Heavy and
+                // intense" is safe here because the anchors and the rock cap carry the scale; what over-scored rock
+                // before was a genre-relative "intensity" with no anchors. This exact text was tested; re-test any edit.
                 "For heaviness, return a single integer from 1 to 10 for how HEAVY and intense the song sounds: distortion, aggression, how hard the kicks, drums and bass hit, how loud, dense and relentless the production is. " +
                 "This is ONE ABSOLUTE scale shared by every genre - never rate relative to the song's own genre. A song that is energetic FOR ITS GENRE is not therefore heavy: an upbeat rock anthem or a fast anime opening is a 6-7, not a 9. " +
                 "Tempo, catchiness and an upbeat or hype mood do NOT make a song heavy on their own. Anchors:\n" +
