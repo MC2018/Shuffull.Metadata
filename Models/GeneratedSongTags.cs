@@ -3,8 +3,9 @@ namespace Shuffull.Metadata.Models;
 /// <summary>
 /// Genre/era/language/mood/theme tags inferred for a song by the producer (the producer) and handed to
 /// Shuffull on import. <see cref="Moods"/> / <see cref="Themes"/> are drawn from their canonical lists;
-/// <see cref="Energy"/> is a 1-10 scalar (1 = calm/sparse, 10 = intense/driving). <see cref="Themes"/> are
-/// sparse origin/relationship labels (Anime, Vocaloid, Cover…) — usually empty. All are optional with null
+/// <see cref="Energy"/> is the 1-10 HEAVINESS score (1 = ambient/gentle, 10 = punishing; one absolute scale
+/// across genres). It keeps the name Energy because it is a wire field, and the site stores it as Song.Energy.
+/// <see cref="Themes"/> are sparse origin/relationship labels (Anime, Vocaloid, Cover…) — usually empty. All are optional with null
 /// defaults so older payloads that omit them remain backward-compatible.
 /// </summary>
 [Serializable]

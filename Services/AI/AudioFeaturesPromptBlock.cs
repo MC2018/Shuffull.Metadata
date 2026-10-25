@@ -4,7 +4,7 @@ using System.Text;
 namespace Shuffull.Metadata.Services.AI;
 
 /// <summary>
-/// Renders measured audio-shape features into the self-describing block the other-details (energy) prompt
+/// Renders measured audio-shape features into the self-describing block the other-details (heaviness) prompt
 /// consumes. Lives in the shared engine so the producer (at export) and Shuffull (at re-tag, from the values
 /// persisted on the Song) build byte-identical context. The descriptions ride with the data - not the system
 /// prompt - so callers can add/drop signals without changing the engine. Returns null when nothing is measured.
@@ -19,7 +19,7 @@ public static class AudioFeaturesPromptBlock
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("Objective audio analysis (measured from the actual audio - weigh these heavily for the energy estimate):");
+        sb.AppendLine("Objective audio analysis (measured from the actual audio - use these to ground the heaviness estimate):");
 
         if (loudnessRangeLu is double lra)
         {

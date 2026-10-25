@@ -267,18 +267,18 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
         }
     }
 
-    // ── Other song details (era, languages, moods, energy, tempo, themes) ───────────────────────────
+    // ── Other song details (era, languages, moods, heaviness, tempo, themes) ────────────────────────
 
     private static Prompt OtherSongDetailsPrompt(GenerateOtherSongDetailsRequest request)
     {
-        // Null candidate list = mood inference disabled (e.g. older callers that don't supply one). Energy is
+        // Null candidate list = mood inference disabled (e.g. older callers that don't supply one). Heaviness is
         // independent, so it is still requested either way.
         var candidateMoods = request.CandidateMoods ?? [];
         var candidateThemes = request.CandidateThemes ?? [];
         return new Prompt(
                 "You will be provided a song name, its artist(s), a list of candidate moods, a list of candidate themes, and optional context.\n" +
                 "You do NOT have internet access. Infer everything from your own knowledge and the provided context only.\n" +
-                "Return the prominent languages used in the lyrics, the song's original release time period, the song's mood(s), an energy level, the song's true tempo (with a recognition flag), and any matching theme(s).\n" +
+                "Return the prominent languages used in the lyrics, the song's original release time period, the song's mood(s), a heaviness level, the song's true tempo (with a recognition flag), and any matching theme(s).\n" +
                 "Always give your single best estimate. Never refuse, never say you cannot verify, and never mention browsing, the internet, or needing more information.\n" +
                 "If the song is instrumental (no lyrics), return exactly [\"Instrumental\"] for the languages.\n" +
                 "If lyrics are included in the additional context, use them as the definitive source for the languages and a strong signal for the mood(s).\n" +
@@ -286,7 +286,23 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 "For the time period, you MUST ALWAYS return a valid era token and NEVER an empty string. If you are unsure of the exact era, give your best-guess decade from the genre/style/artist (most modern electronic, EDM, and video-game music is \"2010s\" or \"2020s\"). Return a decade if post-1900 (such as \"1930s\" or \"2010s\"), otherwise a century (such as \"1700s\" or \"1800s\") - a single token ending in \"0s\", no extra words, never blank.\n" +
                 "For moods, choose between 1 and 3 that best fit the song, ONLY from the provided candidate mood list - copy the names exactly. If none fit well, return an empty list.\n" +
                 "For trueBpm and bpmRecognized: a rough measured tempo may be provided, but automatic beat trackers are unreliable on dense electronic music and are frequently wrong (not just by a clean half/double). If you GENUINELY recognise this specific track and know its real production tempo, return that exact BPM as trueBpm and set bpmRecognized=true. Otherwise estimate the most likely tempo from the genre conventions and the measured hint, return it as trueBpm, and set bpmRecognized=false. trueBpm must be a whole number, normally 60-300. If no measured tempo is given and you don't recognise the track, you may still give your best genre-based estimate with bpmRecognized=false.\n" +
-                "For energy, return a single integer from 1 to 10 describing the song's overall intensity/drive (1 = calm, sparse, gentle; 10 = intense, fast, hard-hitting). Weigh the true tempo heavily - but a fast tempo alone is not high energy if the arrangement is sparse or gentle.\n" +
+                // Heaviness is ONE absolute scale, not intensity relative to the song's genre. The old "energy" wording
+                // asked for intensity/drive and to weigh tempo heavily, which put upbeat rock and anime openings at 8-9
+                // beside hardcore. The anchors were calibrated against the user's own heavy / rock / J-pop folders
+                // (shuffull-workspace#41); re-check them there before moving a level, and bump TagRevision.Current so
+                // the library is re-scored.
+                "For heaviness, return a single integer from 1 to 10 for how HEAVY the song sounds: distortion, aggression, how hard the kicks, drums and bass hit, how dense and harsh the production is. " +
+                "This is ONE ABSOLUTE scale shared by every genre - never rate relative to the song's own genre. A song that is energetic FOR ITS GENRE is not therefore heavy: an upbeat rock anthem or a fast anime opening is a 6-7, not a 9. " +
+                "Tempo, catchiness and an upbeat or hype mood do NOT make a song heavy on their own. Anchors:\n" +
+                "1-2 = ambient, sleep music, solo piano, gentle acoustic.\n" +
+                "3-4 = soft: ballads, lo-fi, jazz, city pop, soft rock, mellow R&B, quiet orchestral.\n" +
+                "5 = typical mid-tempo pop, J-pop, indie, classic rock, funk, house.\n" +
+                "6 = punchy, driving pop/rock, most anime openings, pop with EDM production, epic orchestral.\n" +
+                "7 = hard-hitting: hard rock (AC/DC), punk, aggressive J-rock, and loud, dense electronic dance music - future bass, trance, melodic dubstep, drum & bass, electro house, big-room drops, and rhythm-game / doujin electronic (lapix, Feryquitous, Srav3R, Kotek) even at its most melodic.\n" +
+                "8 = heavy: heavy metal, metalcore, nu-metal (e.g. Drowning Pool - Bodies), dubstep, hard drum & bass, hardstyle, and the lighter / poppier tracks of hardcore artists (Camellia, t+pazolite, USAO).\n" +
+                "9 = very heavy: full-on hardcore, J-core, frenchcore, gabber and hard rhythm-game tracks (typical Camellia, t+pazolite, USAO, Kobaryo, Laur, DJ Noriken), riddim, death and thrash metal.\n" +
+                "10 = punishing: wall-to-wall distorted kicks, speedcore, extratone, harsh noise - fatiguing or physically harsh to listen to. Reserve 10 for the most extreme few percent.\n" +
+                "Electronic dance music that stays loud and dense with a steady driving beat is at least 7 unless it is genuinely gentle throughout. Most songs in a typical library are 3-6.\n" +
                 "For themes, return between 0 and 2 ONLY from the provided candidate theme list - copy the names exactly. Themes are origin/relationship labels (e.g. Anime, Vocaloid, Cover, Parody, Christmas), NOT sounds; pick one ONLY when you are confident the song genuinely is that (an anime tie-in, a Vocaloid production, a cover, a parody, etc.). Most songs match no theme - return an empty list whenever in doubt.\n" +
                 "If you are unsure, pick the most likely option anyway.",
                 $"Song name: {request.SongName}\n" +
@@ -311,7 +327,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                     "type": "array",
                     "items": { "type": "string" }
                 },
-                "energy": { "type": "integer" },
+                "heaviness": { "type": "integer" },
                 "trueBpm": { "type": ["integer", "null"] },
                 "bpmRecognized": { "type": "boolean" },
                 "themes": {
@@ -319,7 +335,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                     "items": { "type": "string" }
                 }
             },
-            "required": ["timePeriod", "languages", "moods", "energy", "trueBpm", "bpmRecognized", "themes"],
+            "required": ["timePeriod", "languages", "moods", "heaviness", "trueBpm", "bpmRecognized", "themes"],
             "additionalProperties": false
         }
         """;
@@ -386,9 +402,9 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 .Take(3)
                 .ToList();
 
-            // Energy: accept only a sane 1-10 scalar; null out anything outside that range so a bad value
+            // Heaviness: accept only a sane 1-10 scalar; null out anything outside that range so a bad value
             // never reaches the hand-off contract.
-            var cleanEnergy = result.Energy is >= 1 and <= 10 ? result.Energy : null;
+            var cleanHeaviness = result.Heaviness is >= 1 and <= 10 ? result.Heaviness : null;
 
             // True tempo: keep only a plausible musical value (coarse sanity gate against a wild number). The
             // caller (BpmResolver) decides whether to trust it over the measurement based on bpmRecognized.
@@ -404,7 +420,7 @@ public class OpenAIService(OpenAIConfiguration config) : IAIService
                 .Take(2)
                 .ToList();
 
-            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Energy = cleanEnergy, Themes = cleanThemes, TrueBpm = cleanTrueBpm };
+            return result with { TimePeriod = cleanTimePeriod, Languages = cleanLanguages, Moods = cleanMoods, Heaviness = cleanHeaviness, Themes = cleanThemes, TrueBpm = cleanTrueBpm };
         }
         catch (Exception e)
         {

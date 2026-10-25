@@ -7,7 +7,7 @@ public class OpenAIConfiguration
     [JsonIgnore]
     public const string OpenAIConfigurationSection = "AI:OpenAI";
     public string ApiKey { get; set; } = string.Empty;
-    // The capable ("strong") model for nuanced inference (genres, sub-genres, era, mood, energy). Provider-neutral:
+    // The capable ("strong") model for nuanced inference (genres, sub-genres, era, mood, heaviness). Provider-neutral:
     // just the model identifier the configured AI provider understands. Prefer this over the legacy ModelName.
     public string StrongModelName { get; set; } = string.Empty;
     // Legacy single-model key, kept so existing "AI:OpenAI:ModelName" config still binds (used as the strong model).
