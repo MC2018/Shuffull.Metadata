@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
 namespace Shuffull.Metadata.Models;
@@ -22,11 +23,12 @@ public record GeneratedSongTags(
     /// <summary>
     /// Heaviness under the key it had before the rename (shuffull-workspace#50). Export files,
     /// <c>SongImports.GeneratedTagsJson</c> and stored AI responses still carry it, so it is read, never written:
-    /// there is no getter, and neither serializer emits a property it can't read.
+    /// there is no getter, and neither serializer emits a property it can't read. Spelled "Energy" because
+    /// every old writer used PascalCase; Newtonsoft and ASP.NET binding also match it case-insensitively.
     /// </summary>
     [JsonProperty("Energy")]
-    [System.Text.Json.Serialization.JsonPropertyName("energy")]
-    [System.Text.Json.Serialization.JsonInclude]
+    [JsonPropertyName("Energy")]
+    [JsonInclude]
     private int? LegacyEnergy
     {
         init => Heaviness ??= value;
