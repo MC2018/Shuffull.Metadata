@@ -20,9 +20,10 @@ public static class AudioFeaturesCalibration
 
     /// <summary>
     /// Percent of the reference library that is less dense than this song, 0-100. Density is the inverse of spectral
-    /// contrast, so a LOW contrast gives a HIGH percentile.
+    /// contrast, so a LOW contrast gives a HIGH percentile. NaN gives 0, the neutral end, as it does for grit.
     /// </summary>
-    public static int DensityPercentile(double spectralContrastDb) => 100 - Percentile(SpectralContrastDb, spectralContrastDb);
+    public static int DensityPercentile(double spectralContrastDb)
+        => double.IsNaN(spectralContrastDb) ? 0 : 100 - Percentile(SpectralContrastDb, spectralContrastDb);
 
     /// <summary>Linear interpolation between the table's percentile points, clamped to 0-100.</summary>
     private static int Percentile(double[] table, double value)

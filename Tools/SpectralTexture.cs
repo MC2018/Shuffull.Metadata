@@ -9,8 +9,8 @@ namespace Shuffull.Metadata.Tools;
 /// <param name="MidGrit">Mean spectral flatness at 250-2000 Hz over the loudest 30% of frames, 0-1. Noise-like
 /// energy (distorted guitars, saturated synths, dense production) is high; clean tones are low.</param>
 /// <param name="UpperGrit">The same at 2000-6000 Hz.</param>
-/// <param name="SpectralContrastDb">Mean peak-to-valley spectral contrast over six octave bands (librosa's
-/// definition), in dB. LOWER means the sound fills the spectrum more completely.</param>
+/// <param name="SpectralContrastDb">Mean peak-to-valley spectral contrast over librosa's seven bands (six octaves from
+/// 200 Hz plus the remainder), in dB. LOWER means the sound fills the spectrum more completely.</param>
 public sealed record SpectralTexture(double MidGrit, double UpperGrit, double SpectralContrastDb)
 {
     public const int SampleRate = 22050;
@@ -22,10 +22,11 @@ public sealed record SpectralTexture(double MidGrit, double UpperGrit, double Sp
     private const int Hop = 512;
     private const float SilenceThreshold = 0.0031622776f; // -50 dBFS: leading/trailing silence is trimmed
     private const double LoudFramePercentile = 70;
+    private const int MinSoundSeconds = 5;
 
     /// <summary>
-    /// Measures <paramref name="samples"/>, mono at <see cref="SampleRate"/>. Null when there is less than a
-    /// few seconds of sound to measure.
+    /// Measures <paramref name="samples"/>, mono at <see cref="SampleRate"/>. Null when there are less than five
+    /// seconds of sound to measure.
     /// </summary>
     /// <remarks>
     /// <see cref="AudioFeaturesCalibration"/> holds the reference distribution these values are ranked against. It
@@ -39,7 +40,7 @@ public sealed record SpectralTexture(double MidGrit, double UpperGrit, double Sp
         while (end > start && Math.Abs(samples[end]) <= SilenceThreshold) end--;
         // Matches the reference measurement, which kept y[first:last] (the last loud sample excluded).
         var trimmed = samples[start..Math.Max(start, end)];
-        if (trimmed.Length < SampleRate * 5)
+        if (trimmed.Length < SampleRate * MinSoundSeconds)
         {
             return null;
         }
@@ -51,9 +52,9 @@ public sealed record SpectralTexture(double MidGrit, double UpperGrit, double Sp
         var upper = BinRange(2000, 6000, binHz);
         var contrastBands = ContrastBands(binHz);
 
-        var padded = new float[trimmed.Length + FrameSize]; // librosa's center=True: half a frame of zeros each side
-        trimmed.CopyTo(padded.AsSpan(FrameSize / 2));
-        var frames = 1 + (padded.Length - FrameSize) / Hop;
+        // librosa's center=True pads half a frame of zeros at each end; read those as zeros rather than copying the
+        // signal into a padded buffer.
+        var frames = 1 + trimmed.Length / Hop;
         var window = new double[FrameSize];
         for (var n = 0; n < FrameSize; n++) window[n] = 0.5 - 0.5 * Math.Cos(2 * Math.PI * n / FrameSize); // periodic Hann
 
@@ -70,10 +71,11 @@ public sealed record SpectralTexture(double MidGrit, double UpperGrit, double Sp
         var scratch = new double[magnitude.Length];
         for (var t = 0; t < frames; t++)
         {
-            var offset = t * Hop;
+            var offset = t * Hop - FrameSize / 2;
             for (var n = 0; n < FrameSize; n++)
             {
-                re[n] = padded[offset + n] * window[n];
+                var i = offset + n;
+                re[n] = i >= 0 && i < trimmed.Length ? trimmed[i] * window[n] : 0;
                 im[n] = 0;
             }
 
