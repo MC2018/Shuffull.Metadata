@@ -25,8 +25,8 @@ public static class TagRevision
     /// <summary>
     /// 2: loud, dense EDM moved from 7 to 8 on the heaviness scale (Shuffull.Metadata#5), and the heaviness call
     /// gets measured grit and density (Shuffull.Metadata#8) whenever the caller has the audio. The producer waits for a
-    /// site it can't reach rather than score without them; only a song whose file is gone still scores without them
-    /// under 2.
+    /// site it can't reach rather than score without them; a song whose file is gone, or whose audio can't be
+    /// measured, still scores without them under 2.
     /// 1: heaviness replaced energy (shuffull-workspace#41).
     /// 0: everything tagged before revisions existed.
     /// </summary>
