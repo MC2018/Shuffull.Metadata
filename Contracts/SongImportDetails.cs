@@ -77,4 +77,10 @@ public record SongImportDetails(
     bool Exploratory = false,
     // The TagRevision the GeneratedTags were produced under. Shuffull re-tags a song whose revision is behind
     // TagRevision.Current, so an older payload (0) is re-scored rather than trusted. Ignored when untagged.
-    int TagRevision = 0);
+    int TagRevision = 0,
+    // Where the song's best part (its hook) begins, as a percent of the song's length, 0-100: the audition
+    // start point. The producer derives it from the source's engagement data when the source has any. A
+    // percent rather than seconds, so a small length difference between the source and the stored file
+    // barely moves it. Null = unknown; the app then starts at 35%.
+    // Optional with a null default for backward compatibility.
+    double? HookStartPercent = null);

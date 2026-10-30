@@ -86,6 +86,9 @@ Recommendation: start with the submodule, move to NuGet once the contract stabil
 
 Namespace `Shuffull.Metadata.Contracts`. This is the JSON object the funnel writes into the drop folder.
 
+Abridged below; the record's own comments in `Contracts/SongImportDetails.cs` are the full, canonical notes.
+Every field after `ExternalSource` is optional, so an older payload that omits it still deserializes.
+
 ```csharp
 public record SongImportDetails(
     string ExternalSongId,
@@ -94,9 +97,23 @@ public record SongImportDetails(
     string TargetUserId,
     string? TargetPlaylistId,
     string? TargetPlaylistName,
-    bool LikelyOriginalArtist,
     ExternalSource ExternalSource,
-    GeneratedSongTags? GeneratedTags = null);   // NEW, optional
+    GeneratedSongTags? GeneratedTags = null,
+    bool MarkAsLiked = false,
+    int? Bpm = null,
+    SongLyrics? Lyrics = null,
+    string? ReplacesSongId = null,
+    string? Name = null,
+    List<string>? Artists = null,
+    string? TagModel = null,
+    int? MeasuredBpm = null,
+    double? LoudnessRangeLu = null,
+    double? CrestFactorDb = null,
+    double? OnsetsPerSecond = null,
+    int? OriginalReleaseYear = null,
+    bool Exploratory = false,
+    int TagRevision = 0,
+    double? HookStartPercent = null);
 ```
 
 | Field | Type | Notes |
@@ -107,19 +124,29 @@ public record SongImportDetails(
 | `TargetUserId` | string | Shuffull user the import belongs to. |
 | `TargetPlaylistId` | string? | Target playlist id, or null. |
 | `TargetPlaylistName` | string? | Target playlist name, or null. |
-| `LikelyOriginalArtist` | bool | Funnel's heuristic flag. |
-| `ExternalSource` | `ExternalSource` enum | See below. For the funnel this is `Youtube`. |
-| `GeneratedTags` | `GeneratedSongTags?` | **New.** Optional precomputed tags; null = "let Shuffull generate". |
+| `ExternalSource` | `ExternalSource` enum | See below. |
+| `GeneratedTags` | `GeneratedSongTags?` | Optional precomputed tags; null = "let Shuffull generate". |
+| `MarkAsLiked` | bool | The user liked it on the source; Shuffull may auto-like it. |
+| `Bpm` | int? | Resolved tempo, or null when unknown. |
+| `Lyrics` | `SongLyrics?` | Lyrics the producer fetched, or null. |
+| `ReplacesSongId` | string? | Shuffull SongId to replace in place (re-sourced audio); null = a new song. |
+| `Name`, `Artists` | string?, list? | Authoritative title and artists; null = use the file's tags. |
+| `TagModel` | string? | The model that produced `GeneratedTags`. |
+| `MeasuredBpm`, `LoudnessRangeLu`, `CrestFactorDb`, `OnsetsPerSecond` | numbers? | Measured audio inputs, kept so tags can be regenerated without the audio. |
+| `OriginalReleaseYear` | int? | Reliable release year, or null. |
+| `Exploratory` | bool | Audition ingest: arrives untagged and provisional. |
+| `TagRevision` | int | The `TagRevision` the tags were produced under; 0 = before revisions. |
+| `HookStartPercent` | double? | Where the hook starts, 0-100 percent of the song's length; null = unknown (the app starts at 35%). |
 
 ### `ExternalSource` enum
 
 Namespace `Shuffull.Metadata.Enums`:
 
 ```csharp
-public enum ExternalSource { Unknown = 0, Youtube = 1, Manual = 2 }
+public enum ExternalSource { Unknown = 0, Youtube = 1, Manual = 2, Spotify = 3 }
 ```
 
-The funnel always uses **`Youtube` (= 1)**.
+The funnel sends **`Youtube` (= 1)**, or **`Spotify` (= 3)** for a Spotify-sourced item.
 
 ### Serialization rules — read this carefully
 
@@ -144,7 +171,6 @@ using default settings**. That means:
   "TargetUserId": "01J9XYZ...",
   "TargetPlaylistId": "01J9ABC...",
   "TargetPlaylistName": null,
-  "LikelyOriginalArtist": true,
   "ExternalSource": 1,
   "GeneratedTags": {
     "MainGenres": ["Pop"],
