@@ -7,7 +7,9 @@ namespace Shuffull.Metadata.Contracts;
 ///
 /// <para>The ack is conditional, like the rating ack: Shuffull only moves a request that is still in a state this
 /// status may follow, and leaves any other alone. A request the user cancelled, or one an import already completed, is
-/// never moved back by a late ack. <see cref="SongRequestAckResponse"/> says which acks applied.</para>
+/// never moved back by a late ack. Re-sending the status a request already has counts as applied, so a producer
+/// that lost the response can safely send the same ack again. <see cref="SongRequestAckResponse"/> says which acks
+/// applied.</para>
 ///
 /// <para><see cref="Reason"/> is free text, set with <see cref="SongRequestAckStatus.Retrying"/> or
 /// <see cref="SongRequestAckStatus.Failed"/>. It is not an enum on purpose: the producer's failure categories change as

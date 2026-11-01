@@ -50,8 +50,9 @@ So the genre engine has no reason to be private and is fine to share. The safe d
 ```
 
 Nothing flows back into the funnel; `Shuffull.Metadata` never references Shuffull.Api or the funnel. The
-runtime coupling between funnel and Shuffull remains exactly what it is today: **a JSON file dropped in a
-shared folder** (see [Drop mechanics](#drop-mechanics)).
+two still don't reference each other's code. At runtime they talk through the import (see
+[Drop mechanics](#drop-mechanics)) and a few HTTP poll-and-ack queues on the API (ratings, replacements,
+[song requests](#song-requests)), and either side runs without the other.
 
 ---
 
@@ -395,8 +396,8 @@ consumption work.
 
 A user can ask for a song the library doesn't have. These types, in `Shuffull.Metadata.Contracts` (and the enum in
 `Shuffull.Metadata.Enums`), are what Shuffull and the producer exchange for it. They follow the house pattern: a durable
-request row on Shuffull's side, which the producer polls and acks. Every name says "source" or "external", never a
-provider.
+request row on Shuffull's side, which the producer polls and acks. No name mentions a provider; where a name needs
+one, it says "source" or "external".
 
 | Type | Direction | What it is |
 | --- | --- | --- |
@@ -408,8 +409,10 @@ provider.
 - **Statuses.** `SongRequestAckStatus` is `Accepted` (1), `Downloading` (2), `Retrying` (3) or `Failed` (4). It goes
   over the wire as its int. `0` is `Unknown`: never send it, and a missing status reads as it.
 - **The ack is conditional.** Shuffull only moves a request that is still in a state the status may follow. A request
-  the user cancelled, or one an import already completed, stays as it is, and its id comes back in `Rejected`. A
-  rejected `Accepted` means the user cancelled: drop the download.
+  the user cancelled, or one an import already completed, stays as it is, and its id comes back in `Rejected`.
+- **A re-sent ack is applied.** Sending the status a request already has comes back in `Applied`, so after a lost
+  response the producer can send the same ack again. A rejected `Accepted` therefore means the request was cancelled,
+  completed or removed: drop the download.
 - **`Reason` is free text.** Send it with `Retrying` or `Failed`. It is not an enum, so the producer's failure
   categories can change without a contract change.
 - **Completing a request** is the import, not an ack: send the song with `SongImportDetails.SongRequestId` set, and

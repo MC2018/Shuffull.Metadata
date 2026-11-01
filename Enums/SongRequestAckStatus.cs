@@ -7,7 +7,10 @@ namespace Shuffull.Metadata.Enums;
 /// </summary>
 public enum SongRequestAckStatus
 {
-    /// <summary>Never sent on purpose. A missing or unreadable status reads as this, so Shuffull can refuse it.</summary>
+    /// <summary>
+    /// Never sent on purpose. A missing status reads as this. Shuffull refuses it, and any value that isn't a defined
+    /// member (an int such as 7 still arrives as 7), rather than checking for this one alone.
+    /// </summary>
     Unknown = 0,
 
     /// <summary>The producer has queued the request for download.</summary>
