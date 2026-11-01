@@ -83,4 +83,8 @@ public record SongImportDetails(
     // percent rather than seconds, so a small length difference between the source and the stored file
     // barely moves it. Null = unknown; the app then starts at 35%.
     // Optional with a null default for backward compatibility.
-    double? HookStartPercent = null);
+    double? HookStartPercent = null,
+    // The song request this import fulfils (PendingSongRequestDto.SongRequestId), so Shuffull can complete it and
+    // link the song, the way ReplacesSongId completes a replacement. Null = not a requested song.
+    // Optional with a null default for backward compatibility.
+    string? SongRequestId = null);

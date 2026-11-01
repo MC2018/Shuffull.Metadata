@@ -46,10 +46,10 @@ What YouTube would ever patch is the scraping (yt-dlp ciphers, rotation, etc.) �
 So the genre engine has no reason to be private and is fine to share. The safe dependency direction is:
 
 ```
-  private funnel  ──references──▶  public Shuffull.Metadata  ◀──references──  Shuffull.Site
+  private funnel  ──references──▶  public Shuffull.Metadata  ◀──references──  Shuffull.Api
 ```
 
-Nothing flows back into the funnel; `Shuffull.Metadata` never references Shuffull.Site or the funnel. The
+Nothing flows back into the funnel; `Shuffull.Metadata` never references Shuffull.Api or the funnel. The
 runtime coupling between funnel and Shuffull remains exactly what it is today: **a JSON file dropped in a
 shared folder** (see [Drop mechanics](#drop-mechanics)).
 
@@ -113,7 +113,8 @@ public record SongImportDetails(
     int? OriginalReleaseYear = null,
     bool Exploratory = false,
     int TagRevision = 0,
-    double? HookStartPercent = null);
+    double? HookStartPercent = null,
+    string? SongRequestId = null);
 ```
 
 | Field | Type | Notes |
@@ -137,6 +138,7 @@ public record SongImportDetails(
 | `Exploratory` | bool | Audition ingest: arrives untagged and provisional. |
 | `TagRevision` | int | The `TagRevision` the tags were produced under; 0 = before revisions. |
 | `HookStartPercent` | double? | Where the hook starts, 0-100 percent of the song's length; null = unknown (the app starts at 35%). |
+| `SongRequestId` | string? | The song request this import fulfils (see [Song requests](#song-requests)); null = not a requested song. |
 
 ### `ExternalSource` enum
 
@@ -386,6 +388,32 @@ list = editing `Resources/genres.json` in `Shuffull.Metadata` and bumping the ve
 
 So: the funnel can build and start emitting `GeneratedTags` independently and ahead of the Shuffull
 consumption work.
+
+---
+
+## Song requests
+
+A user can ask for a song the library doesn't have. These types, in `Shuffull.Metadata.Contracts` (and the enum in
+`Shuffull.Metadata.Enums`), are what Shuffull and the producer exchange for it. They follow the house pattern: a durable
+request row on Shuffull's side, which the producer polls and acks. Every name says "source" or "external", never a
+provider.
+
+| Type | Direction | What it is |
+| --- | --- | --- |
+| `SourceSearchResultDto` | producer → Shuffull → app | One song (audio only) from a search of the source: `ExternalSongId`, `Title`, `Artists`, `Album?`, `DurationSeconds?`, `ThumbnailUrl?`, `IsExplicit`. |
+| `PendingSongRequestDto` | Shuffull → producer | One request waiting for the producer: `SongRequestId`, `UserId`, `ExternalSongId`, `Title`, `Artists`, `DurationSeconds?`, `ThumbnailUrl?`, `TargetPlaylistName`. |
+| `SongRequestAckDto` | producer → Shuffull | The producer's progress on one request: `SongRequestId`, `Status` (`SongRequestAckStatus`), `Reason?`. Sent as an array. |
+| `SongRequestAckResponse` | Shuffull → producer | Which acks moved their request (`Applied`) and which didn't (`Rejected`), by request id. |
+
+- **Statuses.** `SongRequestAckStatus` is `Accepted` (1), `Downloading` (2), `Retrying` (3) or `Failed` (4). It goes
+  over the wire as its int. `0` is `Unknown`: never send it, and a missing status reads as it.
+- **The ack is conditional.** Shuffull only moves a request that is still in a state the status may follow. A request
+  the user cancelled, or one an import already completed, stays as it is, and its id comes back in `Rejected`. A
+  rejected `Accepted` means the user cancelled: drop the download.
+- **`Reason` is free text.** Send it with `Retrying` or `Failed`. It is not an enum, so the producer's failure
+  categories can change without a contract change.
+- **Completing a request** is the import, not an ack: send the song with `SongImportDetails.SongRequestId` set, and
+  `TargetPlaylistName` from the request. Shuffull owns that name, so pass it through unchanged.
 
 ---
 
