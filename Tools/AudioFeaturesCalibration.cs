@@ -5,10 +5,12 @@ namespace Shuffull.Metadata.Tools;
 /// "grittier than 86% of songs" instead of a raw number the model has no feel for.
 /// </summary>
 /// <remarks>
-/// The reference is 1,200 songs from the user's own library, 300 each from the heavy (Loud Bois), rock, Japanese and
-/// calm (Relaxation) folders, measured with <see cref="SpectralTexture.Measure"/> on 2026-10-26. Each table holds the
-/// 0th to 100th percentile. Re-measure them whenever the maths in <see cref="SpectralTexture"/> changes, and re-check
-/// the folder ranges quoted in <c>AudioFeaturesPromptBlock</c>.
+/// The reference is 1,200 songs from the user's own library, 300 each from the heavy (Loud Bois and New Loud Bois),
+/// rock, Japanese and calm (Relaxation) folders, measured with <see cref="SpectralTexture.Measure"/> on 2026-10-26.
+/// Each table holds the 0th to 100th percentile. Re-measure them whenever the maths in <see cref="SpectralTexture"/>
+/// changes, and re-check the folder ranges quoted in <c>AudioFeaturesPromptBlock</c>. The script that rebuilds these
+/// tables, and the librosa reference <see cref="SpectralTexture"/> matches, live in the shuffull-workspace hub:
+/// <c>docs/audio-texture.md</c>.
 /// </remarks>
 public static class AudioFeaturesCalibration
 {
