@@ -7,7 +7,8 @@ namespace Shuffull.Metadata.Models;
 /// Genre/era/language/mood/theme tags inferred for a song by the producer (the producer) and handed to
 /// Shuffull on import. <see cref="Moods"/> / <see cref="Themes"/> are drawn from their canonical lists;
 /// <see cref="Heaviness"/> is the 1-10 score (1 = ambient/gentle, 10 = punishing; one absolute scale across genres).
-/// <see cref="Themes"/> are sparse origin/relationship labels (Anime, Vocaloid, Cover…) — usually empty. All are optional with null
+/// <see cref="Themes"/> are sparse, mostly origin/relationship labels (Anime, Vocaloid, Cover…, plus the
+/// sound-based Kawaii) — usually empty. All are optional with null
 /// defaults so older payloads that omit them remain backward-compatible.
 /// </summary>
 [Serializable]

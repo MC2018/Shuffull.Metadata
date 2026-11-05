@@ -6,8 +6,8 @@ namespace Shuffull.Metadata.Models;
 /// The canonical master theme vocabulary that both Shuffull and the producer infer against, mirroring
 /// <see cref="MoodsFile"/>. Themes are cross-cutting origin/relationship labels (Anime, Vocaloid, Cover,
 /// Parody, Christmas …) — NOT sonic genres, eras, languages, or moods. The one exception is Kawaii, a sound
-/// (cute, high-pitched, Japanese-style) kept here so a jam can include or exclude it. Unlike genres and moods, a theme is OPTIONAL and
-/// sparse: most songs have none. The AI picks 0-2 of these per song only when clearly warranted; anything
+/// (cute, high-pitched, Japanese-style) kept here so a jam can include or exclude it. Unlike genres and
+/// moods, a theme is OPTIONAL and sparse: most songs have none. The AI picks 0-2 of these per song only when clearly warranted; anything
 /// off-list is dropped (membership enforced post-parse, exactly like moods/sub-genres). The list is embedded
 /// in this assembly (see Shuffull.Metadata.csproj) so both sides reference the same source and can't drift.
 /// </summary>
